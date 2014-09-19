@@ -1,0 +1,8 @@
+----------------------------------------------------------------
+2014-09-15 09:42:06.081 GMT:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.6.2.1 - (999685): instance a816c00e-0148-78b0-cd45-000019717160 
+on database directory C:\Users\Ables\Documents\clone\TheKsimulator\ksim  with class loader sun.misc.Launcher$AppClassLoader@1a462c9 
+Loaded from file:/C:/Users/Ables/Documents/NetBeansProjects/lib/derby.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_67-b01
+Database Class Loader started - derby.database.classpath=''

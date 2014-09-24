@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -97,6 +98,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+
 /**
  *
  * @author Fatimehin Dare
@@ -140,6 +142,11 @@ public class SimView extends javax.swing.JFrame implements Observer {
     private static final SimpleDateFormat sdm = new SimpleDateFormat("mm:ss");
     private Thread thread;
     private int dropTimes;
+    private long savedTime;
+    private long droppingTime;
+    private double howLong;
+    private double score;
+    private List<SimComponent> placedList = new ArrayList<SimComponent>();
     private Runnable runner = new Runnable() {
 
         @Override
@@ -147,6 +154,7 @@ public class SimView extends javax.swing.JFrame implements Observer {
             timer();
         }
     };
+
     public javax.swing.JLabel getYesnoLabel() {
         return yesnoLabel;
     }
@@ -188,7 +196,6 @@ public class SimView extends javax.swing.JFrame implements Observer {
         defaultListModelAvailable = new DefaultListModel();
         defaultListModelUsed = new DefaultListModel();
         onSaveClear = false;
-        
 
 //        try {
 //            UIManager.setLookAndFeel(new javax.swing.plaf.nimbus.NimbusLookAndFeel());
@@ -218,7 +225,7 @@ public class SimView extends javax.swing.JFrame implements Observer {
         //instantatiate Themes as CheckBoxes of themes and Add to ThemeMenu
         //LoadAllAvailableThemes(); 
         init();
-        timerLabel.setText("            ");
+        timerLabel.setText("00:00");
         //Add Listeners to the Generated VectorList of Checboxes
 //        clock.start();
         AttachListener(listOfLabels);
@@ -258,10 +265,11 @@ public class SimView extends javax.swing.JFrame implements Observer {
         return customFont;
 
     }
-    public void timer(){
-        while (start)
-            
-    timerLabel.setText(sdm.format(new Date(System.currentTimeMillis() - startTime)));
+
+    public void timer() {
+        while (start) {
+            timerLabel.setText(sdm.format(new Date((System.currentTimeMillis() - startTime) + savedTime)));
+        }
 //        try {
 //            Thread.sleep(50);
 //        } catch (InterruptedException ex) {
@@ -1074,6 +1082,7 @@ public class SimView extends javax.swing.JFrame implements Observer {
         timerLabel.setFont(new java.awt.Font("Trebuchet MS", 1, 18)); // NOI18N
         timerLabel.setText("00:00");
 
+        timer.setSelected(true);
         timer.setText("timer");
         timer.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         timer.addChangeListener(new javax.swing.event.ChangeListener() {
@@ -1093,9 +1102,9 @@ public class SimView extends javax.swing.JFrame implements Observer {
                         .addComponent(workSpacePanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, simulationPanelLayout.createSequentialGroup()
                         .addComponent(sessionDescritionLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 132, Short.MAX_VALUE)
-                        .addGap(156, 156, 156)
+                        .addGap(281, 281, 281)
                         .addComponent(timer)
-                        .addGap(143, 143, 143)
+                        .addGap(18, 18, 18)
                         .addComponent(timerLabel)
                         .addGap(132, 132, 132)
                         .addComponent(jLabel1)
@@ -1107,8 +1116,9 @@ public class SimView extends javax.swing.JFrame implements Observer {
             simulationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(simulationPanelLayout.createSequentialGroup()
                 .addGroup(simulationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(timerLabel, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(timer, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, simulationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(timerLabel)
+                        .addComponent(timer))
                     .addGroup(simulationPanelLayout.createSequentialGroup()
                         .addGap(14, 14, 14)
                         .addGroup(simulationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1598,10 +1608,18 @@ public class SimView extends javax.swing.JFrame implements Observer {
                         controller.setEmptyPlacedComponent(false);
                         defaultListModelAvailable.clear();
                         defaultListModelUsed.clear();
+                        List<Number> list = new ArrayList<>();
+                        Random rand = new Random();
                         //add Elements
                         //availableCompList.setEnabled(false);
                         for (int i = 0; i < components.size(); i++) {
-                            defaultListModelAvailable.addElement(components.get(i));
+                            int gen = rand.nextInt(components.size());
+                            while (list.contains(gen)) {
+                                gen = rand.nextInt(components.size());
+                            }
+                            list.add(gen);
+//                            defaultListModelAvailable.addElement(components.get(i));
+                            defaultListModelAvailable.addElement(components.get(gen));
 
                         }
 
@@ -1868,10 +1886,11 @@ public class SimView extends javax.swing.JFrame implements Observer {
                 } else {
                     try {
                         SimState state = controller.getState();
-                        if(timer.isSelected() ){
+                        if (timer.isSelected()) {
                             state.setTimed(true);
-                            if(state.getTimerDuration() == null){
-                        state.setTimerDuration(System.currentTimeMillis()-startTime);
+                            System.out.println("Simulation timed");
+                            if (state.getTimerDuration() == null) {
+                                state.setTimerDuration(System.currentTimeMillis() - startTime);
                             }
                         }
                         controller.getState().setSimUser(getPresentSimUser());
@@ -1890,9 +1909,11 @@ public class SimView extends javax.swing.JFrame implements Observer {
             } else {
 //                int response = JOptionPane.showConfirmDialog(this, "This User doesnt Exist! Please Login With your credentials",
 //                        null, JOptionPane.OK_CANCEL_OPTION);
-                if(timer.isSelected()){
-                long saveTime = System.currentTimeMillis();
-                controller.getState().setTimerDuration(saveTime-startTime);           }
+                if (timer.isSelected()) {
+                    long saveTime = System.currentTimeMillis();
+                    controller.getState().setTimerDuration(saveTime - startTime);
+                    controller.getState().setTimed(true);
+                }
                 OkCancelOption ok_cancel = new OkCancelOption(this, "KSimulator");
                 ok_cancel.setLabel1("This user does not exist! Please login with your credentials");
                 ok_cancel.setSize(400, 100);
@@ -2019,8 +2040,8 @@ public class SimView extends javax.swing.JFrame implements Observer {
 //            boolean response = closing.showDialog();
 
             SaveDialog saveD = new SaveDialog(this);
-            saveD.setLabel1("Do you want to update your saved session?");
-            saveD.setSize(350, 100);
+            saveD.setLabel1("Do you want to save your session?");
+            saveD.setSize(330, 100);
             int keyOp = saveD.showDialog();
             switch (keyOp) {
                 case 1:
@@ -2042,8 +2063,8 @@ public class SimView extends javax.swing.JFrame implements Observer {
         int indexselected = temp.getSelectedIndex();
 
         if (controller.getState().getDescription() != null) {
-            if (indexselected == 0) {
-            }
+//            if (indexselected == 0) {
+//            }
             if (indexselected > 0) {
                 SimModule[] simModules = controller.fetchModules((long) indexselected);
                 moduleCombo.removeAllItems();
@@ -2053,7 +2074,7 @@ public class SimView extends javax.swing.JFrame implements Observer {
                     moduleCombo.addItem(simModules[i]);
 
                 }
-
+                timer.setEnabled(false);
             }
 
         } else {
@@ -2178,11 +2199,10 @@ public class SimView extends javax.swing.JFrame implements Observer {
             controller.updateStatustext(null);
             controller.setFirstSave(true);
             start = false;
-            if(timer.isSelected())
-            {
-            timerLabel.setText("00:00");
+            if (timer.isSelected()) {
+                timerLabel.setText("00:00");
             }
-            timer.setEnabled(false);
+            timer.setEnabled(true);
             dropTimes = 0;
             thread = null;
 //            runner = null;
@@ -2287,16 +2307,15 @@ public class SimView extends javax.swing.JFrame implements Observer {
     }//GEN-LAST:event_redoSubMenuMouseClicked
 
     private void workSpacePanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_workSpacePanelMouseEntered
-        
+
         // TODO add your handling code here:
     }//GEN-LAST:event_workSpacePanelMouseEntered
 
     private void timerStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_timerStateChanged
-        if(timer.isSelected()){
-        timerLabel.setText("00:00");
-        }
-        else if(!timer.isSelected()){
-        timerLabel.setText("            ");
+        if (timer.isSelected() && controller.getState() == null) {
+            timerLabel.setEnabled(true);
+        } else if (!timer.isSelected()) {
+            timerLabel.setEnabled(false);
         }
     }//GEN-LAST:event_timerStateChanged
 
@@ -2516,6 +2535,10 @@ public class SimView extends javax.swing.JFrame implements Observer {
             droppablePanel.repaint();
 
         } else if (directive.equals("OpenComponent")) {
+            savedTime = controller.getState().getTimerDuration();
+            timer.setSelected(controller.getState().isTimed());
+            timerLabel.setText(sdm.format(new Date(savedTime)));
+            timer.setEnabled(false);
 
             droppablePanel.repaint();
 
@@ -2619,7 +2642,6 @@ public class SimView extends javax.swing.JFrame implements Observer {
     // methodTo populate component successor point
     public void populateSuccessorLocation(SimComponent sc) {
     }
-
 
     class CustomizeDeletePopup extends JPopupMenu {
 
@@ -2780,485 +2802,488 @@ public class SimView extends javax.swing.JFrame implements Observer {
      */
 //}
 
-class DnDlistDrag implements DragGestureListener, DragSourceListener {
+    class DnDlistDrag implements DragGestureListener, DragSourceListener {
 
-    DragSource source;
-    JPanel mainDropPanel;
-    TransferableSimComponent transferable;
-    JList listTemporary;
-    Toolkit toolkit;
+        DragSource source;
+        JPanel mainDropPanel;
+        TransferableSimComponent transferable;
+        JList listTemporary;
+        Toolkit toolkit;
 
-    public DnDlistDrag(JList list, JPanel dropPanel) {
-        listTemporary = list;
-        toolkit = Toolkit.getDefaultToolkit();
-        mainDropPanel = dropPanel;
-        source = new DragSource();
-        source.createDefaultDragGestureRecognizer(list, DnDConstants.ACTION_COPY, this);
-    }
+        public DnDlistDrag(JList list, JPanel dropPanel) {
+            listTemporary = list;
+            toolkit = Toolkit.getDefaultToolkit();
+            mainDropPanel = dropPanel;
+            source = new DragSource();
+            source.createDefaultDragGestureRecognizer(list, DnDConstants.ACTION_COPY, this);
+        }
 
-    @Override
-    public void dragGestureRecognized(DragGestureEvent dge) {
-        try {
-            transferable = new TransferableSimComponent((SimComponent) listTemporary.getSelectedValue());
+        @Override
+        public void dragGestureRecognized(DragGestureEvent dge) {
+            try {
+                transferable = new TransferableSimComponent((SimComponent) listTemporary.getSelectedValue());
 
-            SimComponent draggedComponent = (SimComponent) transferable.getTransferData(TransferableSimComponent.COMPONENT_FLAVOR);
-            Cursor customCursor = toolkit.createCustomCursor(draggedComponent.getSolidImage(), new Point(15, 15), "MyCursor");
-            mainDropPanel.setCursor(customCursor);
-            source.startDrag(dge, customCursor, transferable, this);
-        } catch (UnsupportedFlavorException ex) {
-            Logger.getLogger(DnDlistDrag.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(DnDlistDrag.class.getName()).log(Level.SEVERE, null, ex);
+                SimComponent draggedComponent = (SimComponent) transferable.getTransferData(TransferableSimComponent.COMPONENT_FLAVOR);
+                Cursor customCursor = toolkit.createCustomCursor(draggedComponent.getSolidImage(), new Point(15, 15), "MyCursor");
+                mainDropPanel.setCursor(customCursor);
+                source.startDrag(dge, customCursor, transferable, this);
+            } catch (UnsupportedFlavorException ex) {
+                Logger.getLogger(DnDlistDrag.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(DnDlistDrag.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        @Override
+        public void dragEnter(DragSourceDragEvent dsde) {
+        }
+
+        @Override
+        public void dragOver(DragSourceDragEvent dsde) {
+        }
+
+        @Override
+        public void dropActionChanged(DragSourceDragEvent dsde) {
+        }
+
+        @Override
+        public void dragExit(DragSourceEvent dse) {
+        }
+
+        @Override
+        public void dragDropEnd(DragSourceDropEvent dsde) {
+            mainDropPanel.setCursor(null);
         }
     }
 
-    @Override
-    public void dragEnter(DragSourceDragEvent dsde) {
-    }
-
-    @Override
-    public void dragOver(DragSourceDragEvent dsde) {
-    }
-
-    @Override
-    public void dropActionChanged(DragSourceDragEvent dsde) {
-    }
-
-    @Override
-    public void dragExit(DragSourceEvent dse) {
-    }
-
-    @Override
-    public void dragDropEnd(DragSourceDropEvent dsde) {
-        mainDropPanel.setCursor(null);
-    }
-}
-
 // The  Drop Class
-class DnDpaneldrop extends TransferHandler implements DropTargetListener {
+    class DnDpaneldrop extends TransferHandler implements DropTargetListener {
 
-    private DropTarget target;
-    private SimController simController;
-    private JFrame frameTemp;
-    
+        private DropTarget target;
+        private SimController simController;
+        private JFrame frameTemp;
 
-    public DnDpaneldrop(JFrame frame, JPanel drop, SimController sc) {
-        frameTemp = frame;
-        target = new DropTarget(drop, this);
-        simController = sc;
+        public DnDpaneldrop(JFrame frame, JPanel drop, SimController sc) {
+            frameTemp = frame;
+            target = new DropTarget(drop, this);
+            simController = sc;
 
-    }
+        }
 
-    @Override
-    public boolean canImport(JComponent comp, DataFlavor[] transferFlavors) {
-        return super.canImport(comp, transferFlavors);
-    }
+        @Override
+        public boolean canImport(JComponent comp, DataFlavor[] transferFlavors) {
+            return super.canImport(comp, transferFlavors);
+        }
 
-    @Override
-    public void dragEnter(DropTargetDragEvent dtde) {
-    }
+        @Override
+        public void dragEnter(DropTargetDragEvent dtde) {
+        }
 
-    @Override
-    public void dragOver(DropTargetDragEvent dtde) {
-    }
+        @Override
+        public void dragOver(DropTargetDragEvent dtde) {
+        }
 
-    public void dropActionchanged(DropTargetDragEvent dtde) {
-    }
+        public void dropActionchanged(DropTargetDragEvent dtde) {
+        }
 
-    @Override
-    public void dragExit(DropTargetEvent dte) {
+        @Override
+        public void dragExit(DropTargetEvent dte) {
 //       JOptionPane.showConfirmDialog(null, "You Have Dragged Component Out of Drop Area!!", "Drag Out Of Worspace Alert", JOptionPane.OK_OPTION);
-        OkOption ok = new OkOption(null, "KSimulator");
-        ok.setLabel1("Cannot place component outside Workspace area");
-        ok.setSize(350, 100);
-        ok.showDialog();
-    }
+            OkOption ok = new OkOption(null, "KSimulator");
+            ok.setLabel1("Cannot place component outside Workspace area");
+            ok.setSize(350, 100);
+            ok.showDialog();
+        }
 
-    //This is what happens when completePhone3D Drop occurs
-    @Override
-    public void drop(DropTargetDropEvent dtde) {
-        try {
-            System.out.println("Dropped");
-            frameTemp.setCursor(null);
-            simController.setEmptyPlacedComponent(false);
+        //This is what happens when completePhone3D Drop occurs
+        @Override
+        public void drop(DropTargetDropEvent dtde) {
+            try {
+
+                System.out.println("Dropped wrong");
+                frameTemp.setCursor(null);
+                simController.setEmptyPlacedComponent(false);
 //            simController.setSave(SimController.SaveState.NotSaved);
-            simController.setSaved(false);
-            Transferable tr = dtde.getTransferable();
-            SimComponent dropped = (SimComponent) tr.getTransferData(TransferableSimComponent.COMPONENT_FLAVOR);
-            if (dtde.isDataFlavorSupported(TransferableSimComponent.COMPONENT_FLAVOR) || dtde.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                dtde.acceptDrop(DnDConstants.ACTION_COPY);
+                simController.setSaved(false);
+                Transferable tr = dtde.getTransferable();
+                SimComponent dropped = (SimComponent) tr.getTransferData(TransferableSimComponent.COMPONENT_FLAVOR);
+                if (dtde.isDataFlavorSupported(TransferableSimComponent.COMPONENT_FLAVOR) || dtde.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                    dtde.acceptDrop(DnDConstants.ACTION_COPY);
 
-                SimPoint tempPoint = new SimPoint(dtde.getLocation().x - 130, dtde.getLocation().y - 110);
-                //test codes to show the list of successor comp
-                double maxX = tempPoint.getTopX() + 210;
-                double maxY = tempPoint.getTopY() + 210;
-                if (maxX > 1000) {
-                    tempPoint.setTopX(tempPoint.getTopX() - 130);
+                    SimPoint tempPoint = new SimPoint(dtde.getLocation().x - 130, dtde.getLocation().y - 110);
+                    //test codes to show the list of successor comp
+                    double maxX = tempPoint.getTopX() + 210;
+                    double maxY = tempPoint.getTopY() + 210;
+                    if (maxX > 1000) {
+                        tempPoint.setTopX(tempPoint.getTopX() - 130);
 
-                }
-                if (tempPoint.getTopY() < 0) {
-                    tempPoint.setTopY(0);
-                }
-                if (tempPoint.getTopX() < 0) {
-                    tempPoint.setTopX(0);
-                }
+                    }
+                    if (tempPoint.getTopY() < 0) {
+                        tempPoint.setTopY(0);
+                    }
+                    if (tempPoint.getTopX() < 0) {
+                        tempPoint.setTopX(0);
+                    }
 
-                simController.calculateFreshDropOverlapPercentage(dropped, tempPoint);
-                simController.placeComponent(dropped, tempPoint);
-                simController.setDropOccured(true);
+                    simController.calculateFreshDropOverlapPercentage(dropped, tempPoint);
+                    simController.placeComponent(dropped, tempPoint);
+                    simController.setDropOccured(true);
 
-                if (simController.getSimUser() == null) { // whe a user isnt logged in
-                    simController.createModification("guestlogger.klog", dropped.getComponentName(), "GUEST", "drop", System.currentTimeMillis(), tempPoint.toString());
-                    simController.splitUndoRedoLog("guestlogger.klog");
-                } else {
-                    simController.createModification("logger.klog", dropped.getComponentName(), simController.getSimUser().getFirstName(), "drop", System.currentTimeMillis(), tempPoint.toString());
-                    simController.splitUndoRedoLog("logger.klog");
-                }
-                
-                dtde.dropComplete(true);
-                //ask to see
-                if(timer.isSelected()){
-                dropTimes++;
-                if(dropTimes == 1){
-                    start = true;
-                    startTime  = System.currentTimeMillis();
-                    simController.getState().setTimerStart(new Date(startTime));
-                    if(thread == null){
-                        runner = new Runnable() {
-                            @Override
-                            public void run() {
-                               timer();
+                    if (simController.getSimUser() == null) { // whe a user isnt logged in
+                        simController.createModification("guestlogger.klog", dropped.getComponentName(), "GUEST", "drop", System.currentTimeMillis(), tempPoint.toString());
+                        simController.splitUndoRedoLog("guestlogger.klog");
+                    } else {
+                        simController.createModification("logger.klog", dropped.getComponentName(), simController.getSimUser().getFirstName(), "drop", System.currentTimeMillis(), tempPoint.toString());
+                        simController.splitUndoRedoLog("logger.klog");
+                    }
+
+                    dtde.dropComplete(true);
+                    //ask to see
+                    if (timer.isSelected()) {
+                        dropTimes++;
+                        if (dropTimes == 1) {
+                            start = true;
+                            startTime = System.currentTimeMillis();
+                            droppingTime = startTime;
+                            simController.getState().setTimerStart(new Date(startTime));
+                            if (thread == null) {
+                                runner = new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        timer();
+                                    }
+                                };
+                                thread = new Thread(runner);
+                                System.out.println("this is near thread");
+
+                                thread.start();
+
                             }
-                        };
-                     thread = new Thread(runner);
-                        System.out.println("this is near thread");
-                     
-                    thread.start();
-                    
-                    }}
-                }
+                            score = +dropped.getScorePoint();
+                            System.out.println("score is " + score);
+                        }
+                    }
 //                else if(dropTimes ==7){
 //                start = false;
 //                }
-                return;
+                    return;
+                }
+                dtde.rejectDrop();
+            } catch (UnsupportedFlavorException | IOException ex) {
+                //Logger.getLogger(DnDpaneldrop.class.getName()).log(Level.SEVERE, null, ex);
             }
-            dtde.rejectDrop();
-        } catch (UnsupportedFlavorException | IOException ex) {
-            //Logger.getLogger(DnDpaneldrop.class.getName()).log(Level.SEVERE, null, ex);
+
         }
-        
 
+        @Override
+        public void dropActionChanged(DropTargetDragEvent dtde) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
     }
-
-    @Override
-    public void dropActionChanged(DropTargetDragEvent dtde) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-}
 // class or cellrendering
 
-class IconListRenderer implements ListCellRenderer {
+    class IconListRenderer implements ListCellRenderer {
 
-    DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
+        DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
 
-    IconListRenderer() {
-    }
-
-    @Override
-    public Component getListCellRendererComponent(JList list, Object value, int index,
-            boolean isSelected, boolean cellHasFocus) {
-        Border border = BorderFactory.createTitledBorder("");
-
-        JLabel renderer = (JLabel) defaultRenderer.getListCellRendererComponent(list, value, index,
-                isSelected, cellHasFocus);
-        SimComponent s = (SimComponent) value;
-
-        renderer.setBorder(BorderFactory.createTitledBorder(""));
-
-        try {
-            renderer.setIcon(s.getIconImage());
-        } catch (IOException ex) {
-            Logger.getLogger(IconListRenderer.class.getName()).log(Level.SEVERE, null, ex);
+        IconListRenderer() {
         }
 
-        return renderer;
+        @Override
+        public Component getListCellRendererComponent(JList list, Object value, int index,
+                boolean isSelected, boolean cellHasFocus) {
+            Border border = BorderFactory.createTitledBorder("");
+
+            JLabel renderer = (JLabel) defaultRenderer.getListCellRendererComponent(list, value, index,
+                    isSelected, cellHasFocus);
+            SimComponent s = (SimComponent) value;
+
+            renderer.setBorder(BorderFactory.createTitledBorder(""));
+
+            try {
+                renderer.setIcon(s.getIconImage());
+            } catch (IOException ex) {
+                Logger.getLogger(IconListRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            return renderer;
+        }
     }
-}
 
 // START Cutomized JPopUpMenu class for the Available/Used Component Jlist 
-class CustomisePopUp extends JPopupMenu {
+    class CustomisePopUp extends JPopupMenu {
 
-    private JMenuItem aboutMenuItem;
-    private JMenuItem helpMenuItem;
-    private JLabel componentIcon;
-    private JLabel componentDescription;
-    private SimComponent customSimComponent;
-    private JPanel componentInfoPanel;
+        private JMenuItem aboutMenuItem;
+        private JMenuItem helpMenuItem;
+        private JLabel componentIcon;
+        private JLabel componentDescription;
+        private SimComponent customSimComponent;
+        private JPanel componentInfoPanel;
 
-    public CustomisePopUp(boolean popUp, SimComponent simComponent) throws IOException {
-        //if its true generate completePhone3D menu pop up if its force general description
+        public CustomisePopUp(boolean popUp, SimComponent simComponent) throws IOException {
+            //if its true generate completePhone3D menu pop up if its force general description
 
-        componentIcon = new JLabel("");
-        aboutMenuItem = new JMenuItem();
-        helpMenuItem = new JMenuItem("Help");
-        componentIcon = new JLabel();
-        componentDescription = new JLabel();
-        componentInfoPanel = new JPanel();
+            componentIcon = new JLabel("");
+            aboutMenuItem = new JMenuItem();
+            helpMenuItem = new JMenuItem("Help");
+            componentIcon = new JLabel();
+            componentDescription = new JLabel();
+            componentInfoPanel = new JPanel();
 
-        customSimComponent = simComponent;
-        componentIcon.setIcon(customSimComponent.getDescriptionIconImage());
-        componentDescription.setText(customSimComponent.getDescription());
-        aboutMenuItem.setText("About " + customSimComponent.getComponentName());
+            customSimComponent = simComponent;
+            componentIcon.setIcon(customSimComponent.getDescriptionIconImage());
+            componentDescription.setText(customSimComponent.getDescription());
+            aboutMenuItem.setText("About " + customSimComponent.getComponentName());
 
-        componentInfoPanel.add(componentIcon);
-        componentInfoPanel.add(componentDescription);
-        if (popUp) {
-            // Click PopUp Option
-            aboutMenuItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+            componentInfoPanel.add(componentIcon);
+            componentInfoPanel.add(componentDescription);
+            if (popUp) {
+                // Click PopUp Option
+                aboutMenuItem.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            PopUpFrame custPopupFrame = new PopUpFrame();
+                            custPopupFrame.addPanels(componentInfoPanel);
+                            custPopupFrame.setIconImage(ImageIO.read(this.getClass().getResource("/com/karmelos/ksimulator/2ndbaricon/kicon.png")));
+                            custPopupFrame.setVisible(true);
+                        } catch (IOException ex) {
+                            Logger.getLogger(CustomisePopUp.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+
+                    }
+                });
+
+            } else {
+                // hot keys Option
+                PopUpFrame custPopupFrame = new PopUpFrame();
+                custPopupFrame.addPanels(componentInfoPanel);
+                custPopupFrame.setIconImage(ImageIO.read(this.getClass().getResource("/com/karmelos/ksimulator/2ndbaricon/kicon.png")));
+                custPopupFrame.setVisible(true);
+
+            }
+
+            this.add(aboutMenuItem);
+            this.addSeparator();
+            this.add(helpMenuItem);
+
+        }
+    }
+
+//START GridLine CLass
+    class GridPanel extends JPanel {
+
+        SimController gController;
+
+        GridPanel() {
+            setOpaque(false);
+
+        }
+
+        public void setController(SimController gridController) {
+            gController = gridController;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.setColor(Color.LIGHT_GRAY);
+
+//draw vertical lines
+            for (int i = 5; i <= this.getSize().width; i += 8) {
+                g.drawLine(i, 0, i, this.getSize().height);
+            }
+
+// draw X axIs
+            for (int i = 0; i <= this.getSize().height; i += 8) {
+                g.drawLine(0, i, this.getSize().width, i);
+            }
+        // take clearAction
+
+            //paint images
+            if (gController.IsOpenDirective()) {
+                Map<SimComponent, SimPoint> placedComponents = gController.getState().getPlacedComponents();
+
+                Iterator<SimComponent> iterator = placedComponents.keySet().iterator();
+
+                while (iterator.hasNext()) {
+                    SimComponent tempIterated = iterator.next();
                     try {
-                        PopUpFrame custPopupFrame = new PopUpFrame();
-                        custPopupFrame.addPanels(componentInfoPanel);
-                        custPopupFrame.setIconImage(ImageIO.read(this.getClass().getResource("/com/karmelos/ksimulator/2ndbaricon/kicon.png")));
-                        custPopupFrame.setVisible(true);
+                        g.drawImage(tempIterated.getWireframeImage(),
+                                (int) placedComponents.get(tempIterated).getTopX(), (int) placedComponents.get(tempIterated).getTopY(), null);
                     } catch (IOException ex) {
-                        Logger.getLogger(CustomisePopUp.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(SimView.class.getName()).log(Level.SEVERE, null, ex);
                     }
 
                 }
-            });
 
-        } else {
-            // hot keys Option
-            PopUpFrame custPopupFrame = new PopUpFrame();
-            custPopupFrame.addPanels(componentInfoPanel);
-            custPopupFrame.setIconImage(ImageIO.read(this.getClass().getResource("/com/karmelos/ksimulator/2ndbaricon/kicon.png")));
-            custPopupFrame.setVisible(true);
+            } else {
 
-        }
-
-        this.add(aboutMenuItem);
-        this.addSeparator();
-        this.add(helpMenuItem);
-
-    }
-}
-
-//START GridLine CLass
-class GridPanel extends JPanel {
-
-    SimController gController;
-
-    GridPanel() {
-        setOpaque(false);
-
-    }
-
-    public void setController(SimController gridController) {
-        gController = gridController;
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        g.setColor(Color.LIGHT_GRAY);
-
-//draw vertical lines
-        for (int i = 5; i <= this.getSize().width; i += 8) {
-            g.drawLine(i, 0, i, this.getSize().height);
-        }
-
-// draw X axIs
-        for (int i = 0; i <= this.getSize().height; i += 8) {
-            g.drawLine(0, i, this.getSize().width, i);
-        }
-        // take clearAction
-
-        //paint images
-        if (gController.IsOpenDirective()) {
-            Map<SimComponent, SimPoint> placedComponents = gController.getState().getPlacedComponents();
-
-            Iterator<SimComponent> iterator = placedComponents.keySet().iterator();
-
-            while (iterator.hasNext()) {
-                SimComponent tempIterated = iterator.next();
                 try {
-                    g.drawImage(tempIterated.getWireframeImage(),
-                            (int) placedComponents.get(tempIterated).getTopX(), (int) placedComponents.get(tempIterated).getTopY(), null);
+                    if (gController.IsEmptyPlacedComponent()) {
+                    // this is done to check the placed Component null pinter exception  
+                        // do nothing
+                    } else {
+                        if (gController.isClearAction()) {
+                            Map<SimComponent, SimPoint> tempMap = new LinkedHashMap();
+                            g.drawImage(null, 0, 0, this);
+                            gController.returnClearedComponent();
+                            gController.getState().setPlacedComponents(tempMap);
+                            gController.setClearAction(false);
+                        } else if (gController.isLoginClear()) {
+                            g.drawImage(null, 0, 0, this);
+
+                        } else {
+                            Map<SimComponent, SimPoint> placedComponents = gController.getState().getPlacedComponents();
+
+                            Iterator<SimComponent> iterator = placedComponents.keySet().iterator();
+
+                            //paint only last component
+                            while (iterator.hasNext()) {
+                                SimComponent painted = iterator.next();
+                                g.drawImage(painted.getWireframeImage(),
+                                        (int) placedComponents.get(painted).getTopX(), (int) placedComponents.get(painted).getTopY(), null);
+                            }
+
+                        }
+
+                    }
                 } catch (IOException ex) {
                     Logger.getLogger(SimView.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
             }
-
-        } else {
-
-            try {
-                if (gController.IsEmptyPlacedComponent()) {
-                    // this is done to check the placed Component null pinter exception  
-                    // do nothing
-                } else {
-                    if (gController.isClearAction()) {
-                        Map<SimComponent, SimPoint> tempMap = new LinkedHashMap();
-                        g.drawImage(null, 0, 0, this);
-                        gController.returnClearedComponent();
-                        gController.getState().setPlacedComponents(tempMap);
-                        gController.setClearAction(false);
-                    } else if (gController.isLoginClear()) {
-                        g.drawImage(null, 0, 0, this);
-
-                    } else {
-                        Map<SimComponent, SimPoint> placedComponents = gController.getState().getPlacedComponents();
-
-                        Iterator<SimComponent> iterator = placedComponents.keySet().iterator();
-
-                        //paint only last component
-                        while (iterator.hasNext()) {
-                            SimComponent painted = iterator.next();
-                            g.drawImage(painted.getWireframeImage(),
-                                    (int) placedComponents.get(painted).getTopX(), (int) placedComponents.get(painted).getTopY(), null);
-                        }
-
-                    }
-
-                }
-            } catch (IOException ex) {
-                Logger.getLogger(SimView.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
         }
     }
-}
 //End GridLine CLass
 
 //Component Drag Class
-class ComponentDrag extends MouseAdapter implements MouseListener {
+    class ComponentDrag extends MouseAdapter implements MouseListener {
 
-    View n;
+        View n;
 //    private static final Logger LOGGER = Logger.getLogger(ComponentDrag.class.getName());
-    private final Logger LOGGER  =Logger.getLogger(ComponentDrag.class.getName());
-    GridPanel draggablePanel;
-    SimController dragController;
-    JFrame dragFrame;
-    double sourceX;
-    double sourceY;
-    SimComponent draggedComponent;
-    Point cursorOffset;
-    List<SimComponent> multiDraggedComponents;
-    boolean componentMovement = false;
-    boolean isAMultiDrag = false;
-    boolean isEmptyDrag = false;
-    Toolkit tk;
-    SimComponent succeededComponent;
-    SimPoint baseSimPoint;
-    SimComponent corrrectlyPlacedComponents;
-    Map<SimComponent, SimPoint> placedComp;
-    List<SimComponent> listofCorrectlyPlaced = null;
-
-    public ComponentDrag(GridPanel panel, SimController lsc, JFrame frame) {
-        multiDraggedComponents = new ArrayList<SimComponent>();
-        draggablePanel = panel;
-        dragController = lsc;
-        dragFrame = frame;
-        tk = Toolkit.getDefaultToolkit();
-        draggablePanel.addMouseListener(this);
-        draggablePanel.addMouseMotionListener(this);
-        listofCorrectlyPlaced = new ArrayList<SimComponent>();
-    }
-
-    public double getSourceX() {
-        return sourceX;
-    }
-
-    public void setSourceX(double sourceX) {
-        this.sourceX = sourceX;
-    }
-
-    public double getSourceY() {
-        return sourceY;
-    }
-
-    public void setSourceY(double sourceY) {
-        this.sourceY = sourceY;
-    }
-
-    public SimComponent getSucceededComponent() {
-        return succeededComponent;
-    }
-
-    public void setSucceededComponent(SimComponent succeededComponent) {
-        this.succeededComponent = succeededComponent;
-    }
-
-    public SimController getDragController() {
-        return dragController;
-    }
-
-    public void setDragController(SimController dragController) {
-        this.dragController = dragController;
-    }
-
-    public SimPoint getBaseSimPoint() {
-        return baseSimPoint;
-    }
-
-    public void setBaseSimPoint(SimPoint baseSimPoint) {
-        this.baseSimPoint = baseSimPoint;
-    }
-
-    public SimComponent getCorrrectlyPlacedComponents() {
-        return corrrectlyPlacedComponents;
-    }
-
-    public void setCorrrectlyPlacedComponents(SimComponent corrrectlyPlacedComponents) {
-        this.corrrectlyPlacedComponents = corrrectlyPlacedComponents;
-    }
-
-    public Map<SimComponent, SimPoint> getPlacedComp() {
-        return placedComp;
-    }
-
-    public void setPlacedComp(Map<SimComponent, SimPoint> placedComp) {
-        this.placedComp = placedComp;
-    }
-
-    public List<SimComponent> getListofCorrectlyPlaced() {
-        return listofCorrectlyPlaced;
-    }
-
-    public void setListofCorrectlyPlaced(List<SimComponent> listofCorrectlyPlaced) {
-        this.listofCorrectlyPlaced = listofCorrectlyPlaced;
-    }
-
-    @Override
-    public void mousePressed(MouseEvent me) {
-        try {
-            Map<SimComponent, SimPoint> placedComponents = dragController.getState().getPlacedComponents();
-            draggedComponent = dragController.getDraggedComponent(dragController.getState().getPlacedComponents(), new SimPoint(me.getX(), me.getY()));
-            if (me.isShiftDown()) {
-
-                if (dragController.isMultiDrag(new SimPoint(me.getX(), me.getY()))) {
-                    isEmptyDrag = false;
-                    multiDraggedComponents = dragController.getDraggedComponents(placedComponents,
-                            new SimPoint(me.getX(), me.getY()));
-                } else {
-                    isEmptyDrag = true;
-//                    dragController.updateStatustext("Illegal Drag Operation! u cant do that");
-                    OkOption ok = new OkOption(null, "KSimulator");
-                    ok.setLabel1("Illegal Drag Operation! You can not do that");
-                    ok.setSize(350, 100);
-                    ok.showDialog();
-                }
-
-            }
-        } catch (NullPointerException nul) {
-            Logger.getLogger(SimView.class.getName()).log(Level.SEVERE, null, "First mouse click");
+        private final Logger LOGGER = Logger.getLogger(ComponentDrag.class.getName());
+        GridPanel draggablePanel;
+        SimController dragController;
+        JFrame dragFrame;
+        double sourceX;
+        double sourceY;
+        SimComponent draggedComponent;
+        Point cursorOffset;
+        List<SimComponent> multiDraggedComponents;
+        boolean componentMovement = false;
+        boolean isAMultiDrag = false;
+        boolean isEmptyDrag = false;
+        Toolkit tk;
+        SimComponent succeededComponent;
+        SimPoint baseSimPoint;
+        SimComponent corrrectlyPlacedComponents;
+        Map<SimComponent, SimPoint> placedComp;
+        List<SimComponent> listofCorrectlyPlaced = null;
+        
+        public ComponentDrag(GridPanel panel, SimController lsc, JFrame frame) {
+            multiDraggedComponents = new ArrayList<SimComponent>();
+            draggablePanel = panel;
+            dragController = lsc;
+            dragFrame = frame;
+            tk = Toolkit.getDefaultToolkit();
+            draggablePanel.addMouseListener(this);
+            draggablePanel.addMouseMotionListener(this);
+            listofCorrectlyPlaced = new ArrayList<SimComponent>();
         }
-    }
 
-    @Override
-    public void mouseMoved(MouseEvent me) {
+        public double getSourceX() {
+            return sourceX;
+        }
+
+        public void setSourceX(double sourceX) {
+            this.sourceX = sourceX;
+        }
+
+        public double getSourceY() {
+            return sourceY;
+        }
+
+        public void setSourceY(double sourceY) {
+            this.sourceY = sourceY;
+        }
+
+        public SimComponent getSucceededComponent() {
+            return succeededComponent;
+        }
+
+        public void setSucceededComponent(SimComponent succeededComponent) {
+            this.succeededComponent = succeededComponent;
+        }
+
+        public SimController getDragController() {
+            return dragController;
+        }
+
+        public void setDragController(SimController dragController) {
+            this.dragController = dragController;
+        }
+
+        public SimPoint getBaseSimPoint() {
+            return baseSimPoint;
+        }
+
+        public void setBaseSimPoint(SimPoint baseSimPoint) {
+            this.baseSimPoint = baseSimPoint;
+        }
+
+        public SimComponent getCorrrectlyPlacedComponents() {
+            return corrrectlyPlacedComponents;
+        }
+
+        public void setCorrrectlyPlacedComponents(SimComponent corrrectlyPlacedComponents) {
+            this.corrrectlyPlacedComponents = corrrectlyPlacedComponents;
+        }
+
+        public Map<SimComponent, SimPoint> getPlacedComp() {
+            return placedComp;
+        }
+
+        public void setPlacedComp(Map<SimComponent, SimPoint> placedComp) {
+            this.placedComp = placedComp;
+        }
+
+        public List<SimComponent> getListofCorrectlyPlaced() {
+            return listofCorrectlyPlaced;
+        }
+
+        public void setListofCorrectlyPlaced(List<SimComponent> listofCorrectlyPlaced) {
+            this.listofCorrectlyPlaced = listofCorrectlyPlaced;
+        }
+
+        @Override
+        public void mousePressed(MouseEvent me) {
+            try {
+                Map<SimComponent, SimPoint> placedComponents = dragController.getState().getPlacedComponents();
+                draggedComponent = dragController.getDraggedComponent(dragController.getState().getPlacedComponents(), new SimPoint(me.getX(), me.getY()));
+                if (me.isShiftDown()) {
+
+                    if (dragController.isMultiDrag(new SimPoint(me.getX(), me.getY()))) {
+                        isEmptyDrag = false;
+                        multiDraggedComponents = dragController.getDraggedComponents(placedComponents,
+                                new SimPoint(me.getX(), me.getY()));
+                    } else {
+                        isEmptyDrag = true;
+//                    dragController.updateStatustext("Illegal Drag Operation! u cant do that");
+                        OkOption ok = new OkOption(null, "KSimulator");
+                        ok.setLabel1("Illegal Drag Operation! You can not do that");
+                        ok.setSize(350, 100);
+                        ok.showDialog();
+                    }
+
+                }
+            } catch (NullPointerException nul) {
+                Logger.getLogger(SimView.class.getName()).log(Level.SEVERE, null, "First mouse click");
+            }
+        }
+
+        @Override
+        public void mouseMoved(MouseEvent me) {
 //        try {
 //            Thread.sleep(200);
 //            if (!dragController.IsEmptyPlacedComponent() && dragController.getState().getPlacedComponents() != null && me != null) {
@@ -3273,112 +3298,166 @@ class ComponentDrag extends MouseAdapter implements MouseListener {
 //        } catch (InterruptedException ex) {
 //            Logger.getLogger(ComponentDrag.class.getName()).log(Level.SEVERE, null, ex);
 //        }
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent me) {
-        Map<SimComponent, SimPoint> placedComponents = dragController.getState().getPlacedComponents();
-        dragController.setSaved(false);
-        if (!me.isShiftDown() && (me.getX() > 100 && me.getY() > 100 && me.getX() < 800 && me.getY() < 470)) {
-
-            placedComponents.get(draggedComponent).setTopX(me.getX() - 100);
-            placedComponents.get(draggedComponent).setTopY(me.getY() - 100);
-            try {
-                if (dragController.getSimUser() == null) { // whe a user isnt logged in
-                    dragController.createModification("guestlogger.klog", draggedComponent.getComponentName(), "GUEST",
-                            "dragged", System.currentTimeMillis(), new SimPoint(placedComponents.get(draggedComponent).getTopX(), placedComponents.get(draggedComponent).getTopY()).toString());
-                    dragController.splitUndoRedoLog("guestlogger.klog");
-                } else {
-                    dragController.createModification("logger.klog", draggedComponent.getComponentName(), dragController.getSimUser().getFirstName(),
-                            "dragged", System.currentTimeMillis(), new SimPoint(placedComponents.get(draggedComponent).getTopX(), placedComponents.get(draggedComponent).getTopY()).toString());
-                    dragController.splitUndoRedoLog("logger.klog");
-                }
-
-            } catch (NullPointerException ex) {
-                System.out.println("NullpointerException on 2946");
-            }
-        } else {
-            if (!isEmptyDrag) {
-                for (int i = 0; i < multiDraggedComponents.size(); i++) {
-                    placedComponents.get(multiDraggedComponents.get(i)).setTopX(me.getX() - 100);
-                    placedComponents.get(multiDraggedComponents.get(i)).setTopY(me.getY() - 100);
-                }
-            }
-            //loop to change multiposition!
         }
-        draggablePanel.repaint();
-    }
 
-    @Override
-    public void mouseReleased(MouseEvent evt) {
+        @Override
+        public void mouseDragged(MouseEvent me) {
+            Map<SimComponent, SimPoint> placedComponents = dragController.getState().getPlacedComponents();
+            dragController.setSaved(false);
+            if (!me.isShiftDown() && (me.getX() > 100 && me.getY() > 100 && me.getX() < 800 && me.getY() < 470)) {
 
-        //Toolkit toolkit = Toolkit.getDefaultToolkit();
-        draggablePanel.setCursor(null);
+                placedComponents.get(draggedComponent).setTopX(me.getX() - 100);
+                placedComponents.get(draggedComponent).setTopY(me.getY() - 100);
+                try {
+                    if (dragController.getSimUser() == null) { // whe a user isnt logged in
+                        dragController.createModification("guestlogger.klog", draggedComponent.getComponentName(), "GUEST",
+                                "dragged", System.currentTimeMillis(), new SimPoint(placedComponents.get(draggedComponent).getTopX(), placedComponents.get(draggedComponent).getTopY()).toString());
+                        dragController.splitUndoRedoLog("guestlogger.klog");
+                    } else {
+                        dragController.createModification("logger.klog", draggedComponent.getComponentName(), dragController.getSimUser().getFirstName(),
+                                "dragged", System.currentTimeMillis(), new SimPoint(placedComponents.get(draggedComponent).getTopX(), placedComponents.get(draggedComponent).getTopY()).toString());
+                        dragController.splitUndoRedoLog("logger.klog");
+                    }
+
+                } catch (NullPointerException ex) {
+                    System.out.println("NullpointerException on 2946");
+                }
+            } else {
+                if (!isEmptyDrag) {
+                    for (int i = 0; i < multiDraggedComponents.size(); i++) {
+                        placedComponents.get(multiDraggedComponents.get(i)).setTopX(me.getX() - 100);
+                        placedComponents.get(multiDraggedComponents.get(i)).setTopY(me.getY() - 100);
+                    }
+                }
+                //loop to change multiposition!
+            }
+            draggablePanel.repaint();
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent evt) {
+            System.out.println("wrong drop");
+            //Toolkit toolkit = Toolkit.getDefaultToolkit();
+            draggablePanel.setCursor(null);
         // on mouse release it doesnt just place it checks 
-        // 1. if its completePhone3D successor
-        // 2. if its 40% overlapped
+            // 1. if its completePhone3D successor
+            // 2. if its 40% overlapped
 
-        if (dragController.getState() != null) {
-            succeededComponent = dragController.getComponentToBeSucceeded(dragController.getState().
-                    getPlacedComponents(), new SimPoint(evt.getX(), evt.getY()), draggedComponent);
+            if (dragController.getState() != null) {
+                succeededComponent = dragController.getComponentToBeSucceeded(dragController.getState().
+                        getPlacedComponents(), new SimPoint(evt.getX(), evt.getY()), draggedComponent);
 
             /////////////////////// if its completePhone3D single component
-            //
-            //
-            //  THIS SECTION HOLDS ONLY THE SINGLE DRAG JOBS
-            //
-            //
-            //
-            /////////////////////////////////////////////////////////
-            if (!isAMultiDrag) {
-                if (succeededComponent != null) {
-                    if (checkQualification(succeededComponent, draggedComponent, evt) && !checkSame(succeededComponent, draggedComponent, evt)) {
+                //
+                //
+                //  THIS SECTION HOLDS ONLY THE SINGLE DRAG JOBS
+                //
+                //
+                //
+                /////////////////////////////////////////////////////////
+                if (!isAMultiDrag) {
+                    if (succeededComponent != null) {
+                        if (checkQualification(succeededComponent, draggedComponent, evt) && !checkSame(succeededComponent, draggedComponent, evt)) {
 //                        int numberComplete = 0;
-                        baseSimPoint = dragController.getBaseSimPoint(succeededComponent);
+                            System.out.println("correctly");
+                            baseSimPoint = dragController.getBaseSimPoint(succeededComponent);
 
-                        dragController.getState().getPlacedComponents().get(draggedComponent).setTopX(baseSimPoint.getTopX());
-                        dragController.getState().getPlacedComponents().get(draggedComponent).setTopY(baseSimPoint.getTopY());
+                            dragController.getState().getPlacedComponents().get(draggedComponent).setTopX(baseSimPoint.getTopX());
+                            dragController.getState().getPlacedComponents().get(draggedComponent).setTopY(baseSimPoint.getTopY());
 
-                        dragFrame.repaint();
-
-                        dragController.updateStatustext("Component placed correctly");
-
+                            dragFrame.repaint();
+                            
+                            dragController.updateStatustext("Component placed correctly");
+                            howLong = (System.currentTimeMillis()-droppingTime)/1000;
+                            howLong =  Math.rint(howLong);
+                            if(!placedList.contains(draggedComponent)){
+                            if(howLong <= 8){
+                            score = score + (draggedComponent.getScorePoint());
+                            }
+                            else if(howLong > 8){
+                            score = score + ((draggedComponent.getScorePoint()) - ((howLong-8)*0.001));
+                            placedList.add(draggedComponent);
+                            }
+                            }
 //                        int response = JOptionPane.showConfirmDialog(dragFrame, "View 3D image?",
 //                                "Componenent Placed Correctly", JOptionPane.OK_CANCEL_OPTION);
-                        int listof = 0;
-                        int numberComplete = 0;
-                        YesNoOption yesno = new YesNoOption(dragFrame);
-                        yesno.setLabel1("Component placed correctly. View 3D image?");
-                        yesno.setSize(350, 100);
-                        int response = yesno.showDialog();
+                            int listof = 0;
+                            int numberComplete = 0;
+                            YesNoOption yesno = new YesNoOption(dragFrame);
+                            yesno.setLabel1("Component placed correctly. View 3D image?");
+                            yesno.setSize(350, 100);
+                            int response = yesno.showDialog();
 
-                        if (response == 1) {
+                            if (response == 1) {
 
-                            //get the top X axis ofcorrectly placed base component to compare with other
-                            double correctlyPlacedPositionTopX = baseSimPoint.getTopX();
+                                //get the top X axis ofcorrectly placed base component to compare with other
+                                double correctlyPlacedPositionTopX = baseSimPoint.getTopX();
 
-                            //map all placed components and there simpoint
-                            placedComp = dragController.getState().getPlacedComponents();
-                            //Iterate through placed component map to retrieve components with same Simpoints
-                            Iterator<SimComponent> iterator = placedComp.keySet().iterator();
-                            listofCorrectlyPlaced = new ArrayList<SimComponent>();
+                                //map all placed components and there simpoint
+                                placedComp = dragController.getState().getPlacedComponents();
+                                //Iterate through placed component map to retrieve components with same Simpoints
+                                Iterator<SimComponent> iterator = placedComp.keySet().iterator();
+                                listofCorrectlyPlaced = new ArrayList<SimComponent>();
 
-                            while (iterator.hasNext()) {
+                                while (iterator.hasNext()) {
 
-                                for (int i = 0; i < placedComp.size(); i++) {
-                                    SimComponent iteratedComp = iterator.next();
+                                    for (int i = 0; i < placedComp.size(); i++) {
+                                        SimComponent iteratedComp = iterator.next();
 //                                    compare all placed components and make sure that only components with the correct topX are placed 
-                                    if (placedComp.get(iteratedComp).getTopX() == correctlyPlacedPositionTopX) {
-                                        numberComplete += 1;
-                                        listof += 1;
-                                        listofCorrectlyPlaced.add(iteratedComp);
-                                        corrrectlyPlacedComponents = iteratedComp;
+                                        if (placedComp.get(iteratedComp).getTopX() == correctlyPlacedPositionTopX) {
+                                            numberComplete += 1;
+                                            listof += 1;
+                                            listofCorrectlyPlaced.add(iteratedComp);
+                                            corrrectlyPlacedComponents = iteratedComp;
+                                        }
+                                    } // End For Loop
+                                    //This is method was not being used
+                                    if (numberComplete == placedComp.size() && dragController.getState().getAvailableComponents().isEmpty()) {
+                                        start = false;
+                                        dragController.updateStatustext("Simulation Complete!!");
+                                        OkOption okk = new OkOption(null, "KSimulator");
+                                        okk.setLabel1("Assembly Complete");
+                                        okk.setSize(150, 100);
+                                        okk.showDialog();
                                     }
-                                } // End For Loop
-                                //This is method was not being used
-                                if (numberComplete == placedComp.size() && dragController.getState().getAvailableComponents().isEmpty()) {
+
+                                }
+
+                                ////////////// while ends
+                                SwingUtilities.invokeLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            CustomJFrame customJFrame = new CustomJFrame(listofCorrectlyPlaced);
+                                        } catch (HeadlessException ex) {
+                                            Logger.getLogger(ComponentDrag.class.getName()).log(Level.SEVERE, null, ex);
+                                        } catch (IOException ex) {
+                                            Logger.getLogger(ComponentDrag.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                    }
+                                });
+                            //          threedFrame = new ViewFor3d(new ArrayList<SimComponent>(listofCorrectlyPlaced),new HashMap<SimComponent, BranchGroup>(dragController.getScenesAll()));
+                                //
+                                //                            Thread jmeThread = new Thread(new Runnable() {
+                                //                                @Override
+                                //                                public void run() {
+                                //                                    threedFrame.setLocationRelativeTo(null);
+                                //                                   threedFrame.setVisible(true);
+                                //
+                                //                                }
+                                //                            });
+                                //                            jmeThread.start();
+                                //                            dragFrame.repaint();
+
+                            } else if (dragController.getState().getAvailableComponents().isEmpty()) {
+                                if (dragController.checkSameSimPoints()) {
                                     start = false;
+                                    if (timer.isSelected()) {
+                                        dragController.getState().setTimerDuration(System.currentTimeMillis() - startTime);
+                                    }
+                                    System.out.println("this is near complete");
                                     dragController.updateStatustext("Simulation Complete!!");
+//                            JOptionPane.showMessageDialog(null, "Simulation Complete");
                                     OkOption okk = new OkOption(null, "KSimulator");
                                     okk.setLabel1("Assembly Complete");
                                     okk.setSize(150, 100);
@@ -3386,172 +3465,136 @@ class ComponentDrag extends MouseAdapter implements MouseListener {
                                 }
 
                             }
+                        } else if (checkSame(succeededComponent, draggedComponent, evt)) {
+                            dragController.updateStatustext("You haven't Moved "
+                                    + draggedComponent.getComponentName() + "out of its Area");
 
-                            ////////////// while ends
-                            SwingUtilities.invokeLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        CustomJFrame customJFrame = new CustomJFrame(listofCorrectlyPlaced);
-                                    } catch (HeadlessException ex) {
-                                        Logger.getLogger(ComponentDrag.class.getName()).log(Level.SEVERE, null, ex);
-                                    } catch (IOException ex) {
-                                        Logger.getLogger(ComponentDrag.class.getName()).log(Level.SEVERE, null, ex);
-                                    }
-                                }
-                            });
-                            //          threedFrame = new ViewFor3d(new ArrayList<SimComponent>(listofCorrectlyPlaced),new HashMap<SimComponent, BranchGroup>(dragController.getScenesAll()));
-                            //
-                            //                            Thread jmeThread = new Thread(new Runnable() {
-                            //                                @Override
-                            //                                public void run() {
-                            //                                    threedFrame.setLocationRelativeTo(null);
-                            //                                   threedFrame.setVisible(true);
-                            //
-                            //                                }
-                            //                            });
-                            //                            jmeThread.start();
-                            //                            dragFrame.repaint();
-
-                        } else if (dragController.getState().getAvailableComponents().isEmpty()) {
-                            if (dragController.checkSameSimPoints()) {
-                                start = false;
-                                if(timer.isSelected()){
-                                dragController.getState().setTimerDuration(System.currentTimeMillis()-startTime);
-                                }
-                                System.out.println("this is near complete");
-                                dragController.updateStatustext("Simulation Complete!!");
-//                            JOptionPane.showMessageDialog(null, "Simulation Complete");
-                                OkOption okk = new OkOption(null, "KSimulator");
-                                okk.setLabel1("Assembly Complete");
-                                okk.setSize(150, 100);
-                                okk.showDialog();
+                        } else if (!checkQualification(succeededComponent, draggedComponent, evt)) {
+                            Toolkit.getDefaultToolkit().beep();
+                            dragController.updateStatustext("Can not drop " + "'" + draggedComponent.getComponentName() + "'" + "  on " + "'" + succeededComponent.getComponentName() + "'");
+                            OkOption ok1 = new OkOption(null, "KSimulator");
+                            ok1.setLabel1("Can't drop " + "'" + draggedComponent.getComponentName() + "'" + "  on " + "'" + succeededComponent.getComponentName() + "'");
+                            ok1.setSize(400, 100);
+                            ok1.showDialog();
+//                            score = score - (0.4 *draggedComponent.getScorePoint());
+                            System.out.println("score is now "+score);
+                            if(!placedList.contains(draggedComponent)){
+                            placedList.add(draggedComponent);
+                                System.out.println("you placed wrong your score is still " +score);
                             }
-
                         }
-                    } else if (checkSame(succeededComponent, draggedComponent, evt)) {
-                        dragController.updateStatustext("You haven't Moved "
-                                + draggedComponent.getComponentName() + "out of its Area");
 
-                    } else if (!checkQualification(succeededComponent, draggedComponent, evt)) {
-                        Toolkit.getDefaultToolkit().beep();
-                        dragController.updateStatustext("Can not drop " + "'" + draggedComponent.getComponentName() + "'" + "  on " + "'" + succeededComponent.getComponentName() + "'");
-                        OkOption ok1 = new OkOption(null, "KSimulator");
-                        ok1.setLabel1("Cann't drop " + "'" + draggedComponent.getComponentName() + "'" + "  on " + "'" + succeededComponent.getComponentName() + "'");
-                        ok1.setSize(400, 100);
-                        ok1.showDialog();
+                    } else {
+                        // if no successor rules are applied repaint as usual
+                        if (cursorOffset != null && draggedComponent != null && dragController != null && dragController.getState() != null && dragController.getState().getPlacedComponents() != null) {
+                            SimPoint point = dragController.getState().getPlacedComponents().get(draggedComponent);
+                            if (point != null) {
+                                point.setTopX(evt.getX() - cursorOffset.x);
+                                point.setTopY(evt.getY() - cursorOffset.y);
+
+                                dragFrame.repaint();
+                            }
+                        }
+
                     }
 
-                } else {
-                    // if no successor rules are applied repaint as usual
-                    if (cursorOffset != null && draggedComponent != null && dragController != null && dragController.getState() != null && dragController.getState().getPlacedComponents() != null) {
-                        SimPoint point = dragController.getState().getPlacedComponents().get(draggedComponent);
-                        if (point != null) {
-                            point.setTopX(evt.getX() - cursorOffset.x);
-                            point.setTopY(evt.getY() - cursorOffset.y);
+                }// when isAmultiDrag equals false
+                /////////////////////// if its completePhone3D multiple component
+                //
+                //
+                //  THIS SECTION HOLDS ONLY THE MULTIPLE DRAG JOBS
+                //
+                //
+                //
+                /////////////////////////////////////////////////////////
+                //When isAmultiDrag equals TRUE
+                else {
+                    //  get the base Component of the vector of SimComponents if it is completePhone3D succesor to succeding
+                    SimComponent succedeesBase = multiDraggedComponents.get(0);
+                    if (succeededComponent != null) {
+                        if (checkQualification(succeededComponent, succedeesBase, evt)) {
+                            baseSimPoint = dragController.getBaseSimPoint(succeededComponent);
+                            for (int i = 0; i < multiDraggedComponents.size(); i++) {
 
-                            dragFrame.repaint();
-                        }
-                    }
+                                dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopX(baseSimPoint.getTopX());
+                                dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopY(baseSimPoint.getTopY());
+
+                            }// end For statement 
+                        } // end if
+
+                    }// END BIGGER IF
+                    else {
+                        for (int i = 0; i < multiDraggedComponents.size(); i++) {
+
+                            dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopX(evt.getX() - cursorOffset.x);
+                            dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopY(evt.getY() - cursorOffset.y);
+
+                        } //ENd FOR 
+
+                    }// END ELSE
+
+                    dragFrame.repaint();
+                    isAMultiDrag = false;
 
                 }
 
-            }// when isAmultiDrag equals false
-            /////////////////////// if its completePhone3D multiple component
-            //
-            //
-            //  THIS SECTION HOLDS ONLY THE MULTIPLE DRAG JOBS
-            //
-            //
-            //
-            /////////////////////////////////////////////////////////
-            //When isAmultiDrag equals TRUE
-            else {
-                //  get the base Component of the vector of SimComponents if it is completePhone3D succesor to succeding
-                SimComponent succedeesBase = multiDraggedComponents.get(0);
-                if (succeededComponent != null) {
-                    if (checkQualification(succeededComponent, succedeesBase, evt)) {
-                        baseSimPoint = dragController.getBaseSimPoint(succeededComponent);
-                        for (int i = 0; i < multiDraggedComponents.size(); i++) {
+            }
+        }
 
-                            dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopX(baseSimPoint.getTopX());
-                            dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopY(baseSimPoint.getTopY());
-
-                        }// end For statement 
-                    } // end if
-
-                }// END BIGGER IF
-                else {
-                    for (int i = 0; i < multiDraggedComponents.size(); i++) {
-
-                        dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopX(evt.getX() - cursorOffset.x);
-                        dragController.getState().getPlacedComponents().get(multiDraggedComponents.get(i)).setTopY(evt.getY() - cursorOffset.y);
-
-                    } //ENd FOR 
-
-                }// END ELSE
-
-                dragFrame.repaint();
-                isAMultiDrag = false;
+        private String[] getListComponentId(List<SimComponent> list) {
+            List<String> names = new ArrayList<String>();
+            String[] idArray = null;
+            if (list.size() > 0) {
+                for (SimComponent components : list) {
+                    Long id = components.getId();
+                    names.add("/obj_" + id.toString() + ".obj");
+                }
+                idArray = new String[names.size()];
+                idArray = names.toArray(idArray);
 
             }
 
+            return idArray;
         }
-    }
 
-    private String[] getListComponentId(List<SimComponent> list) {
-        List<String> names = new ArrayList<String>();
-        String[] idArray = null;
-        if (list.size() > 0) {
-            for (SimComponent components : list) {
-                Long id = components.getId();
-                names.add("/obj_" + id.toString() + ".obj");
+        public boolean checkQualification(SimComponent succeededComponent, SimComponent succedding, MouseEvent evt) {
+
+            boolean result = dragController.canSucceed(succeededComponent, succedding);
+
+            double percentageOverlap = dragController.calculateDraggedOverlapPercentage(succeededComponent, evt.getX());
+
+            if (result) {
+                // get the baseComponent X and Y  and redraw
+                return true;
+
+            } else {
+                return false;
             }
-            idArray = new String[names.size()];
-            idArray = names.toArray(idArray);
 
         }
 
-        return idArray;
-    }
+        public boolean checkSame(SimComponent succeededComponent, SimComponent succedding, MouseEvent evt) {
 
-    public boolean checkQualification(SimComponent succeededComponent, SimComponent succedding, MouseEvent evt) {
+            if (succedding.equals(succeededComponent)) {
 
-        boolean result = dragController.canSucceed(succeededComponent, succedding);
+                return true;
 
-        double percentageOverlap = dragController.calculateDraggedOverlapPercentage(succeededComponent, evt.getX());
+            } else {
 
-        if (result) {
-            // get the baseComponent X and Y  and redraw
-            return true;
+                return false;
+            }
 
-        } else {
-            return false;
         }
 
-    }
-
-    public boolean checkSame(SimComponent succeededComponent, SimComponent succedding, MouseEvent evt) {
-
-        if (succedding.equals(succeededComponent)) {
-
-            return true;
-
-        } else {
-
-            return false;
+        public Map<SimComponent, BranchGroup> cloneMapCopy(Map<SimComponent, BranchGroup> mp) {
+            Map<SimComponent, BranchGroup> cloned = new HashMap<SimComponent, BranchGroup>();
+            cloned.putAll(mp);
+            return cloned;
         }
-
     }
-
-    public Map<SimComponent, BranchGroup> cloneMapCopy(Map<SimComponent, BranchGroup> mp) {
-        Map<SimComponent, BranchGroup> cloned = new HashMap<SimComponent, BranchGroup>();
-        cloned.putAll(mp);
-        return cloned;
-    }
-}
 }
 // Theme Item ChangedLiastepcjvps
+
 class ThemeChangeListener implements MouseListener {
 
     private Map<String, String> mapTheme;

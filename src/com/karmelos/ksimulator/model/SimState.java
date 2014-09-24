@@ -31,6 +31,8 @@ public class SimState extends Observable implements Serializable {
     private static final long serialVersionUID = -505800887487595246L;
     private Long id;
     private String description;
+    private int score;
+    private boolean scored;
     private boolean globalAccessFlag;
     private boolean readWriteFlag;
     private Date savedAt;
@@ -192,6 +194,22 @@ public class SimState extends Observable implements Serializable {
 
     public void setTimed(boolean timed) {
         this.timed = timed;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public boolean isScored() {
+        return scored;
+    }
+
+    public void setScored(boolean scored) {
+        this.scored = scored;
     }
     
 }

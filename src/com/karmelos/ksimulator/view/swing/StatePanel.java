@@ -181,6 +181,7 @@ public class StatePanel extends javax.swing.JPanel {
             controlState.setTimed(tempState.isTimed());
             controlState.setTimerDuration(tempState.getTimerDuration());
             
+            
              controlState.setChanged();  
              tempObject[0] = "OpenComponent";
              controlState.notifyObservers(tempObject);

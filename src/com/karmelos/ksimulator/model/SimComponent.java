@@ -1,5 +1,4 @@
 package com.karmelos.ksimulator.model;
-import com.sun.j3d.loaders.Scene;
 import java.awt.Image;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.imageio.ImageIO;
-import javax.media.j3d.BranchGroup;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -28,6 +26,15 @@ public class SimComponent implements Serializable {
 
     private static final long serialVersionUID = -3884151126049415788L;
     private Long id;
+    private double scorePoint;
+
+    public double getScorePoint() {
+        return scorePoint;
+    }
+
+    public void setScorePoint(double scorePoint) {
+        this.scorePoint = scorePoint;
+    }
     private String componentName;
     private String description;
     private int overlayOrder;
